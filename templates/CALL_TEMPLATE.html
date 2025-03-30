@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<body>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamada com {{ contact }} - Messaging App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0f1419;
+            color: #fff;
+            line-height: 1.6;
+            height: 100vh;
+        }
+
+        .call-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .call-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.4);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+        .call-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .call-type {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .call-duration {
+            font-size: 16px;
+            color: #ccc;
+        }
+
+        .call-back-button a {
+            color: #fff;
+            font-size: 24px;
+            text-decoration: none;
+        }
+
+        .video-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background-color: #0f1419;
+        }
+
+        .remote-video-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #remote-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .local-video-container {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            width: 150px;
+            height: 200px;
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 5;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        #local-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+
+        .audio-only-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .contact-profile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .contact-pic {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 3px solid #128C7E;
+        }
+
+        .contact-pic img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .contact-name {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .audio-wave {
+            width: 200px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .audio-bar {
+            width: 6px;
+            height: 20px;
+            background-color: #128C7E;
+            margin: 0 3px;
+            border-radius: 3px;
+            animation: audio-wave 1.2s infinite ease-in-out;
+        }
+
+        .audio-bar:nth-child(2) {
+            animation-delay: 0.1s;
+            height: 30px;
+        }
+
+        .audio-bar:nth-child(3) {
+            animation-delay: 0.2s;
+            height: 40px;
+        }
+
+        .audio-bar:nth-child(4) {
+            animation-delay: 0.3s;
+            height: 50px;
+        }
+
+        .audio-bar:nth-child(5) {
+            animation-delay: 0.4s;
+            height: 40px;
+        }
+
+        .audio-bar:nth-child(6) {
+            animation-delay: 0.5s;
+            height: 30px;
+        }
+
+        .audio-bar:nth-child(7) {
+            animation-delay: 0.6s;
+            height: 20px;
+        }
+
+        @keyframes audio-wave {
+            0%, 100% {
+                transform: scaleY(0.5);
+            }
+            50% {
+                transform: scaleY(1);
+            }
+        }
+
+        .call-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+        .call-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            margin: 0 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .call-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .mute-btn {
+            background-color: #555;
+            color: #fff;
+        }
+
+        .mute-btn.active {
+            background-color: #f39c12;
+        }
+
+        .video-btn {
+            background-color: #555;
+            color: #fff;
+        }
+
+        .video-btn.active {
+            background-color: #f39c12;
+        }
+
+        .flip-btn {
+            background-color: #555;
+            color: #fff;
+        }
+
+        .end-call-btn {
+            background-color: #e74c3c;
+            color: #fff;
+        }
+
+        .connecting-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .connecting-text {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .connecting-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #128C7E;
+            animation: spin 1s infinite linear;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div class="call-container">
+        <div class="call-header">
+            <div class="call-info">
+                <div class="call-type">{{ call_type|capitalize }} Call</div>
+                <div class="call-duration" id="call-duration">00:00</div>
+            </div>
+            <div class="call-back-button">
+                <a href="{{ url_for('contacts') }}" id="back-button">&times;</a>
+            </div>
+        </div>
+
+        <div class="video-container" id="video-container">
+            <div class="remote-video-container">
+                <video id="remote-video" autoplay playsinline></video>
+            </div>
+            <div class="local-video-container">
+                <video id="local-video" autoplay playsinline muted></video>
+            </div>
+        </div>
+
+        <div class="audio-only-container hidden" id="audio-container">
+            <div class="contact-profile">
+                <div class="contact-pic">
+                    <img src="/static/profile_pics/{{ contact_pic }}" alt="{{ contact }}">
+                </div>
+                <div class="contact-name">{{ contact }}</div>
+            </div>
+            <div class="audio-wave">
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+            </div>
+        </div>
+
+        <div class="call-controls">
+            <button class="call-btn mute-btn" id="mute-btn" title="Mute/Unmute">🎤</button>
+            <button class="call-btn video-btn {{ 'hidden' if call_type == 'audio' }}" id="video-btn" title="Video On/Off">📹</button>
+            <button class="call-btn flip-btn {{ 'hidden' if call_type == 'audio' }}" id="flip-btn" title="Flip Camera">🔄</button>
+            <button class="call-btn end-call-btn" id="end-call-btn" title="End Call">📵</button>
+        </div>
+
+        <div class="connecting-overlay" id="connecting-overlay">
+            <div class="connecting-text">Connecting...</div>
+            <div class="connecting-spinner"></div>
+        </div>
+    </div>
+
+    <script>
+        // Variables
+        const socket = io();
+        const username = "{{ username }}";
+        const contact = "{{ contact }}";
+        const callType = "{{ call_type }}";
+        const isInitiator = {{ 'true' if is_initiator else 'false' }};
+
+        let localStream = null;
+        let remoteStream = null;
+        let peerConnection = null;
+        let callStartTime = null;
+        let callDurationInterval = null;
+        let videoEnabled = callType === 'video';
+        let audioEnabled = true;
+        let isFrontCamera = true;
+
+        // DOM Elements
+        const localVideo = document.getElementById('local-video');
+        const remoteVideo = document.getElementById('remote-video');
+        const videoContainer = document.getElementById('video-container');
+        const audioContainer = document.getElementById('audio-container');
+        const connectingOverlay = document.getElementById('connecting-overlay');
+        const callDurationElement = document.getElementById('call-duration');
+        const muteBtn = document.getElementById('mute-btn');
+        const videoBtn = document.getElementById('video-btn');
+        const flipBtn = document.getElementById('flip-btn');
+        const endCallBtn = document.getElementById('end-call-btn');
+        const backButton = document.getElementById('back-button');
+
+        // ICE servers configuration for WebRTC
+        const iceServers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
+        // Initialize call
+        async function initializeCall() {
+            try {
+                // Set up media based on call type
+                const constraints = {
+                    audio: true,
+                    video: callType === 'video' ? { facingMode: 'user' } : false
+                };
+
+                // Get local media stream
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                // Display local stream
+                if (callType === 'video') {
+                    localVideo.srcObject = localStream;
+                    videoContainer.classList.remove('hidden');
+                    audioContainer.classList.add('hidden');
+                } else {
+                    videoContainer.classList.add('hidden');
+                    audioContainer.classList.remove('hidden');
+                }
+
+                // Create peer connection
+                createPeerConnection();
+
+                // Add local stream to peer connection
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+
+                // If initiator, create and send offer
+                if (isInitiator) {
+                    createOffer();
+                }
+
+            } catch (error) {
+                console.error('Error accessing media devices:', error);
+                alert('Não foi possível acessar câmera/microfone. Verifique as permissões.');
+                window.location.href = '/contacts';
+            }
+        }
+
+        // Create WebRTC peer connection
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(iceServers);
+
+            // Handle ICE candidates
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    socket.emit('ice_candidate', {
+                        target: contact,
+                        candidate: event.candidate
+                    });
+                }
+            };
+
+            // Handle connection state changes
+            peerConnection.onconnectionstatechange = event => {
+                if (peerConnection.connectionState === 'connected') {
+                    connectingOverlay.classList.add('hidden');
+                    startCallTimer();
+                }
+            };
+
+            // Handle incoming stream
+            peerConnection.ontrack = event => {
+                remoteStream = event.streams[0];
+                remoteVideo.srcObject = remoteStream;
+            };
+        }
+
+        // Create and send offer
+        async function createOffer() {
+            try {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                socket.emit('call_offer', {
+                    target: contact,
+                    offer: offer
+                });
+
+            } catch (error) {
+                console.error('Error creating offer:', error);
+                alert('Erro ao estabelecer conexão.');
+                endCall();
+            }
+        }
+
+        // Handle incoming offer
+        async function handleOffer(offer) {
+            try {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                socket.emit('call_answer', {
+                    target: contact,
+                    answer: answer
+                });
+
+            } catch (error) {
+                console.error('Error handling offer:', error);
+                alert('Erro ao estabelecer conexão.');
+                endCall();
+            }
+        }
+
+        // Handle incoming answer
+        async function handleAnswer(answer) {
+            try {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            } catch (error) {
+                console.error('Error handling answer:', error);
+                alert('Erro ao estabelecer conexão.');
+                endCall();
+            }
+        }
+
+        // Handle incoming ICE candidate
+        function handleIceCandidate(candidate) {
+            try {
+                peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (error) {
+                console.error('Error adding ICE candidate:', error);
+            }
+        }
+
+        // Start call timer
+        function startCallTimer() {
+            callStartTime = new Date();
+            callDurationInterval = setInterval(updateCallDuration, 1000);
+        }
+
+        // Update call duration display
+        function updateCallDuration() {
+            const now = new Date();
+            const diff = Math.floor((now - callStartTime) / 1000);
+            const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
+            const seconds = (diff % 60).toString().padStart(2, '0');
+            callDurationElement.textContent = `${minutes}:${seconds}`;
+        }
+
+        // Toggle mute
+        function toggleMute() {
+            audioEnabled = !audioEnabled;
+
+            localStream.getAudioTracks().forEach(track => {
+                track.enabled = audioEnabled;
+            });
+
+            muteBtn.classList.toggle('active', !audioEnabled);
+            muteBtn.textContent = audioEnabled ? '🎤' : '🔇';
+        }
+
+        // Toggle video
+        function toggleVideo() {
+            if (callType === 'audio') return;
+
+            videoEnabled = !videoEnabled;
+
+            localStream.getVideoTracks().forEach(track => {
+                track.enabled = videoEnabled;
+            });
+
+            videoBtn.classList.toggle('active', !videoEnabled);
+            videoBtn.textContent = videoEnabled ? '📹' : '🚫';
+        }
+
+        // Flip camera (mobile only)
+        async function flipCamera() {
+            if (callType === 'audio' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+
+            isFrontCamera = !isFrontCamera;
+            const facingMode = isFrontCamera ? 'user' : 'environment';
+
+            try {
+                // Stop current tracks
+                localStream.getTracks().forEach(track => track.stop());
+
+                // Get new stream with flipped camera
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: { facingMode: facingMode }
+                });
+
+                // Replace tracks in peer connection
+                const videoTrack = newStream.getVideoTracks()[0];
+                const audioTrack = newStream.getAudioTracks()[0];
+
+                const senders = peerConnection.getSenders();
+                const videoSender = senders.find(sender => sender.track && sender.track.kind === 'video');
+                const audioSender = senders.find(sender => sender.track && sender.track.kind === 'audio');
+
+                if (videoSender) {
+                    videoSender.replaceTrack(videoTrack);
+                }
+
+                if (audioSender) {
+                    audioSender.replaceTrack(audioTrack);
+                }
+
+                // Update local stream and video
+                localStream = newStream;
+                localVideo.srcObject = newStream;
+
+                // Apply current state
+                localStream.getAudioTracks().forEach(track => {
+                    track.enabled = audioEnabled;
+                });
+
+                localStream.getVideoTracks().forEach(track => {
+                    track.enabled = videoEnabled;
+                });
+
+            } catch (error) {
+                console.error('Error flipping camera:', error);
+                alert('Erro ao alternar câmera.');
+            }
+        }
+
+        // End call
+        function endCall() {
+            // Notify other user
+            socket.emit('end_call', {
+                target: contact
+            });
+
+            // Clean up
+            cleanupCall();
+
+            // Redirect back to contacts
+            window.location.href = '/contacts';
+        }
+
+        // Clean up resources
+        function cleanupCall() {
+            // Stop timer
+            if (callDurationInterval) {
+                clearInterval(callDurationInterval);
+            }
+
+            // Close peer connection
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+
+            // Stop local stream tracks
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+        }
+
+        // Event listeners
+        muteBtn.addEventListener('click', toggleMute);
+        videoBtn.addEventListener('click', toggleVideo);
+        flipBtn.addEventListener('click', flipCamera);
+        endCallBtn.addEventListener('click', endCall);
+
+        // Prevent accidental navigation
+        backButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('Deseja encerrar a chamada?')) {
+                endCall();
+            }
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', (e) => {
+            endCall();
+        });
+
+        // Socket.IO event listeners
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('call_offer', (data) => {
+            if (data.sender === contact) {
+                handleOffer(data.offer);
+            }
+        });
+
+        socket.on('call_answer', (data) => {
+            if (data.sender === contact) {
+                handleAnswer(data.answer);
+            }
+        });
+
+        socket.on('ice_candidate', (data) => {
+            if (data.sender === contact) {
+                handleIceCandidate(data.candidate);
+            }
+        });
+
+        socket.on('call_ended', (data) => {
+            if (data.sender === contact) {
+                alert(`${contact} encerrou a chamada.`);
+                cleanupCall();
+                window.location.href = '/contacts';
+            }
+        });
+
+        // Initialize call when page loads
+        window.addEventListener('DOMContentLoaded', initializeCall);
+    </script>
+</body>
+</html>

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamada com {{ contact }} - Messaging App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .call-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .call-header {
+            padding: 20px;
+            text-align: center;
+            background-color: rgba(0,0,0,0.5);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+        .call-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .call-contact-pic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 2px solid #fff;
+        }
+
+        .call-contact-pic img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .call-contact-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .call-status {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .call-duration {
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
+        .video-container {
+            flex: 1;
+            position: relative;
+            background-color: #111;
+        }
+
+        #remote-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #local-video {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            width: 120px;
+            height: 160px;
+            border: 2px solid #fff;
+            border-radius: 8px;
+            object-fit: cover;
+            z-index: 5;
+        }
+
+        .audio-only-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        .audio-avatar {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid #128C7E;
+        }
+
+        .audio-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .call-controls {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            background-color: rgba(0,0,0,0.7);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+        .call-control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            margin: 0 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: #fff;
+            transition: all 0.3s;
+        }
+
+        .mute-btn {
+            background-color: #555;
+        }
+
+        .mute-btn.active {
+            background-color: #e74c3c;
+        }
+
+        .video-btn {
+            background-color: #555;
+        }
+
+        .video-btn.active {
+            background-color: #e74c3c;
+        }
+
+        .end-call-btn {
+            background-color: #e74c3c;
+        }
+
+        .waiting-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 20;
+        }
+
+        .waiting-animation {
+            width: 80px;
+            height: 80px;
+            border: 4px solid #128C7E;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .waiting-text {
+            font-size: 18px;
+            color: #fff;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+</head>
+<body>
+    <div class="call-container">
+        <div class="call-header">
+            <div class="call-info">
+                <div class="call-contact-pic">
+                    <img src="/static/profile_pics/{{ contact_pic }}" alt="{{ contact }}">
+                </div>
+                <div class="call-contact-name">{{ contact }}</div>
+                <div class="call-status" id="call-status">Conectando...</div>
+                <div class="call-duration" id="call-duration">00:00</div>
+            </div>
+        </div>
+
+        <div class="video-container" id="video-container">
+            <video id="remote-video" autoplay playsinline></video>
+            <video id="local-video" autoplay playsinline muted></video>
+
+            <div class="audio-only-container" id="audio-container" style="display: none;">
+                <div class="audio-avatar">
+                    <img src="/static/profile_pics/{{ contact_pic }}" alt="{{ contact }}">
+                </div>
+            </div>
+        </div>
+
+        <div class="call-controls">
+            <button class="call-control-btn mute-btn" id="mute-btn" title="Mutar">🎤</button>
+            <button class="call-control-btn video-btn" id="video-btn" title="Desativar vídeo">📹</button>
+            <button class="call-control-btn end-call-btn" id="end-call-btn" title="Encerrar chamada">📵</button>
+        </div>
+
+        <div class="waiting-container" id="waiting-container">
+            <div class="waiting-animation"></div>
+            <div class="waiting-text">Chamando {{ contact }}...</div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração inicial
+        const socket = io();
+        const username = "{{ username }}";
+        const contact = "{{ contact }}";
+        const callType = "{{ call_type }}"; // 'audio' ou 'video'
+
+        // Elementos DOM
+        const remoteVideo = document.getElementById('remote-video');
+        const localVideo = document.getElementById('local-video');
+        const videoContainer = document.getElementById('video-container');
+        const audioContainer = document.getElementById('audio-container');
+        const muteBtn = document.getElementById('mute-btn');
+        const videoBtn = document.getElementById('video-btn');
+        const endCallBtn = document.getElementById('end-call-btn');
+        const callStatus = document.getElementById('call-status');
+        const callDuration = document.getElementById('call-duration');
+        const waitingContainer = document.getElementById('waiting-container');
+
+        // Variáveis WebRTC
+        let localStream;
+        let peerConnection;
+        let callStartTime;
+        let durationInterval;
+        let isAudioMuted = false;
+        let isVideoOff = false;
+        let isCallConnected = false;
+        let isInitiator = {{ is_initiator|lower }};
+
+        // Configuração WebRTC
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
+        // Inicializar chamada
+        async function initializeCall() {
+            try {
+                // Configurar mídia com base no tipo de chamada
+                const constraints = {
+                    audio: true,
+                    video: callType === 'video'
+                };
+
+                // Obter stream local
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                // Configurar vídeo local
+                localVideo.srcObject = localStream;
+
+                // Mostrar/ocultar contêineres com base no tipo de chamada
+                if (callType === 'audio') {
+                    videoContainer.style.display = 'none';
+                    audioContainer.style.display = 'flex';
+                    videoBtn.style.display = 'none';
+                }
+
+                // Criar conexão peer
+                createPeerConnection();
+
+                // Se for o iniciador da chamada, envie a oferta
+                if (isInitiator) {
+                    socket.emit('call_user', {
+                        target: contact,
+                        type: callType
+                    });
+                } else {
+                    // Se for o receptor, a oferta já foi aceita, aguarde ICE candidates
+                    waitingContainer.style.display = 'none';
+                    callStatus.textContent = 'Conectado';
+                    startCallTimer();
+                }
+
+            } catch (err) {
+                console.error('Erro ao inicializar mídia:', err);
+                alert('Não foi possível acessar câmera/microfone. Verifique as permissões.');
+                endCall();
+            }
+        }
+
+        // Criar conexão peer
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(configuration);
+
+            // Adicionar tracks ao peer connection
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            // Lidar com ICE candidates
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    socket.emit('ice_candidate', {
+                        target: contact,
+                        candidate: event.candidate
+                    });
+                }
+            };
+
+            // Lidar com mudanças de estado de conexão
+            peerConnection.onconnectionstatechange = () => {
+                if (peerConnection.connectionState === 'connected') {
+                    if (!isCallConnected) {
+                        isCallConnected = true;
+                        waitingContainer.style.display = 'none';
+                        callStatus.textContent = 'Conectado';
+                        startCallTimer();
+                    }
+                } else if (peerConnection.connectionState === 'disconnected' ||
+                           peerConnection.connectionState === 'failed') {
+                    endCall();
+                }
+            };
+
+            // Lidar com streams remotos
+            peerConnection.ontrack = event => {
+                remoteVideo.srcObject = event.streams[0];
+            };
+
+            // Se for o iniciador, crie e envie oferta
+            if (isInitiator) {
+                createAndSendOffer();
+            }
+        }
+
+        // Criar e enviar oferta SDP
+        async function createAndSendOffer() {
+            try {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                socket.emit('call_offer', {
+                    target: contact,
+                    offer: peerConnection.localDescription
+                });
+
+            } catch (err) {
+                console.error('Erro ao criar oferta:', err);
+                alert('Erro ao iniciar chamada.');
+                endCall();
+            }
+        }
+
+        // Lidar com resposta SDP
+        async function handleAnswer(answer) {
+            try {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            } catch (err) {
+                console.error('Erro ao processar resposta:', err);
+            }
+        }
+
+        // Lidar com ICE candidate
+        async function handleIceCandidate(candidate) {
+            try {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (err) {
+                console.error('Erro ao adicionar ICE candidate:', err);
+            }
+        }
+
+        // Iniciar temporizador de chamada
+        function startCallTimer() {
+            callStartTime = new Date();
+            durationInterval = setInterval(updateCallDuration, 1000);
+        }
+
+        // Atualizar duração da chamada
+        function updateCallDuration() {
+            const now = new Date();
+            const diff = now - callStartTime;
+            const minutes = Math.floor(diff / 60000).toString().padStart(2, '0');
+            const seconds = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+            callDuration.textContent = `${minutes}:${seconds}`;
+        }
+
+        // Encerrar chamada
+        function endCall() {
+            socket.emit('end_call', {
+                target: contact
+            });
+
+            cleanupCall();
+            window.location.href = '/contacts';
+        }
+
+        // Limpar recursos da chamada
+        function cleanupCall() {
+            if (durationInterval) {
+                clearInterval(durationInterval);
+            }
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+
+            if (peerConnection) {
+                peerConnection.close();
+            }
+        }
+
+        // Alternar mudo
+        function toggleMute() {
+            isAudioMuted = !isAudioMuted;
+            localStream.getAudioTracks().forEach(track => {
+                track.enabled = !isAudioMuted;
+            });
+
+            muteBtn.classList.toggle('active', isAudioMuted);
+            muteBtn.textContent = isAudioMuted ? '🔇' : '🎤';
+        }
+
+        // Alternar vídeo
+        function toggleVideo() {
+            isVideoOff = !isVideoOff;
+            localStream.getVideoTracks().forEach(track => {
+                track.enabled = !isVideoOff;
+            });
+
+            videoBtn.classList.toggle('active', isVideoOff);
+            videoBtn.textContent = isVideoOff ? '🚫' : '📹';
+            localVideo.style.display = isVideoOff ? 'none' : 'block';
+        }
+
+        // Event listeners
+        muteBtn.addEventListener('click', toggleMute);
+        videoBtn.addEventListener('click', toggleVideo);
+        endCallBtn.addEventListener('click', endCall);
+
+        // Socket.IO event listeners
+        socket.on('call_accepted', () => {
+            callStatus.textContent = 'Chamada aceita, conectando...';
+        });
+
+        socket.on('call_offer_response', data => {
+            if (data.accepted) {
+                handleAnswer(data.answer);
+            } else {
+                alert('Chamada recusada');
+                endCall();
+            }
+        });
+
+        socket.on('ice_candidate', data => {
+            handleIceCandidate(data.candidate);
+        });
+
+        socket.on('call_ended', () => {
+            alert('Chamada encerrada pelo outro usuário');
+            cleanupCall();
+            window.location.href = '/contacts';
+        });
+
+        // Inicializar chamada quando a página carregar
+        window.addEventListener('load', initializeCall);
+
+        // Confirmar antes de sair da página
+        window.addEventListener('beforeunload', (e) => {
+            if (isCallConnected) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        });
+    </script>
+</body>
+</html>

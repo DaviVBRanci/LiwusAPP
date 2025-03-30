@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/emoji-mart/css/emoji-mart.css">
+<script src="https://unpkg.com/emoji-mart/dist/emoji-mart.js"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contatos - Messaging App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: #128C7E;
+            color: #fff;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+
+        .profile-pic-container {
+            position: relative;
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .profile-pic-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .edit-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .profile-pic-container:hover .edit-overlay {
+            opacity: 1;
+        }
+
+        .header-actions .btn {
+            background-color: #e74c3c;
+            padding: 8px 15px;
+            border-radius: 4px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .app-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .contacts-container h3 {
+            margin-bottom: 15px;
+            color: #128C7E;
+        }
+
+        .add-contact {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .add-contact input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            font-size: 16px;
+        }
+
+        .add-contact button {
+            padding: 10px 15px;
+            background-color: #128C7E;
+            color: #fff;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+        }
+
+        .contacts-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .contact-item:hover {
+            background-color: #f9f9f9;
+        }
+
+        .contact-pic {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+        
+
+        .contact-pic img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .status-indicator {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
+        .status-indicator.online {
+            background-color: #2ecc71;
+        }
+
+        .status-indicator.offline {
+            background-color: #95a5a6;
+        }
+
+        .status-indicator.typing {
+            background-color: #f39c12;
+        }
+
+        .contact-info {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .contact-name {
+            display: block;
+            font-weight: bold;
+        }
+
+        .contact-status {
+            display: block;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .contact-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .call-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background-color: #128C7E;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .call-btn:hover {
+            background-color: #0E7369;
+        }
+
+        .no-contacts {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .close-modal {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .preview-container {
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        /* Call modal */
+        .call-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .call-modal-content {
+            background-color: #fff;
+            margin: 20% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+        }
+
+        .call-modal-header {
+            margin-bottom: 20px;
+        }
+
+        .call-modal-contact {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .call-modal-pic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .call-modal-pic img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .call-modal-name {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .call-modal-status {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .call-modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .call-modal-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .accept-call {
+            background-color: #2ecc71;
+        }
+
+        .decline-call {
+            background-color: #e74c3c;
+        }
+
+        /* Incoming call notification */
+        .incoming-call {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #128C7E;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1100;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 350px;
+        }
+
+        .incoming-call-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .incoming-call-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-right: 10px;
+        }
+
+        .incoming-call-pic img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .incoming-call-info {
+            flex: 1;
+        }
+
+        .incoming-call-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .incoming-call-type {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .incoming-call-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .incoming-call-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .answer-btn {
+            background-color: #2ecc71;
+        }
+
+        .decline-btn {
+            background-color: #e74c3c;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div class="button-container">
+    <button id="callHistoryButton" class="call-history-btn">Ligações</button>
+</div>
+
+<style>
+    .call-history-btn {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #4CAF50; /* Cor do botão */
+        color: white; /* Cor do texto */
+        border: none; /* Sem borda */
+        border-radius: 5px; /* Bordas arredondadas */
+        cursor: pointer; /* Mão ao passar o mouse */
+        transition: background-color 0.3s; /* Transição suave */
+    }
+
+    .call-history-btn:hover {
+        background-color: #45a049; /* Cor ao passar o mouse */
+    }
+</style>
+
+<script>
+    document.getElementById("callHistoryButton").onclick = function() {
+        window.location.href = '/call_history'; // Altere para a URL correta
+    };
+</script>
+
+    <div class="app-container">
+        <header class="app-header">
+            <div class="user-profile">
+                <div class="profile-pic-container" id="profile-pic-container">
+                    <img src="/static/profile_pics/{{ profile_pic }}" alt="{{ username }}" id="profile-pic">
+                    <div class="edit-overlay">
+                        <span>Editar</span>
+                    </div>
+                </div>
+                <h2>{{ username }}</h2>
+            </div>
+            <div class="header-actions">
+                <a href="{{ url_for('logout') }}" class="btn">Sair</a>
+            </div>
+        </header>
+
+        <main class="app-content">
+            <div class="contacts-container">
+                <h3>Contatos</h3>
+              <!-- Botão para criar grupo -->
+<button class="create-group-btn" onclick="redirectToGroupTemplate()">
+    <span class="icon">📁</span> Criar Grupo (Não funcional, Em desenvolvimento)
+</button>
+<style>
+   
+
+
+
+<script>
+    function redirectToGroupTemplate() {
+        window.location.href = '/group'; // Redireciona para a página group.html
+    }
+</script>
+
+
+<script>
+    function redirectToGroupTemplate() {
+        // Redireciona para a rota que renderiza o template GROUP_TEMPLATE
+        window.location.href = '/create_group'; // Substitua '/create_group' pela sua rota correta
+    }
+</script>
+
+<style>
+    .create-group-btn {
+        display: inline-flex;
+        align-items: center;
+        background-color: #4CAF50; /* Cor do botão */
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 15px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 16px;
+    }
+
+    .create-group-btn:hover {
+        background-color: #45a049; /* Cor ao passar o mouse */
+    }
+
+    .icon {
+        margin-right: 8px; /* Espaçamento entre o ícone e o texto */
+    }
+</style>
+        
+                <div class="add-contact">
+                    <input type="text" id="contact-input" placeholder="Nome de usuário">
+                    <button id="add-contact-btn">Adicionar</button>
+                </div>
+
+                <div class="contacts-list" id="contacts-list">
+                    {% if contacts %}
+                        {% for contact in contacts %}
+                            <div class="contact-item">
+                                <div class="contact-pic">
+                                    <img src="/static/profile_pics/{{ contact.profile_pic }}" alt="{{ contact.username }}">
+                                    <span class="status-indicator {{ contact.status }}"></span>
+                                </div>
+                                <div class="contact-info" data-username="{{ contact.username }}">
+                                    <span class="contact-name">{{ contact.username }}</span>
+                                    <span class="contact-status">{{ contact.status }}</span>
+                                </div>
+                                <div class="contact-actions">
+                                    <button class="call-btn audio-call-btn" title="Chamada de áudio" data-username="{{ contact.username }}" data-pic="{{ contact.profile_pic }}">📞</button>
+                                    <button class="call-btn video-call-btn" title="Chamada de vídeo" data-username="{{ contact.username }}" data-pic="{{ contact.profile_pic }}">📹</button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="no-contacts">Nenhum contato adicionado</p>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+
+        <!-- Profile pic upload modal -->
+        <div id="upload-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h3>Atualizar foto de perfil</h3>
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="profile-pic-input">Selecione uma imagem:</label>
+                        <input type="file" id="profile-pic-input" name="profile_pic" accept="image/*">
+                    </div>
+                    <div class="preview-container">
+                        <img id="preview-image" src="#" alt="Preview" style="display: none; max-width: 100%; max-height: 200px;">
+                    </div>
+                    <button type="submit" class="btn">Salvar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Outgoing call modal -->
+        <div id="call-modal" class="call-modal">
+            <div class="call-modal-content">
+                <div class="call-modal-header">
+                    <h3>Chamando...</h3>
+                </div>
+                <div class="call-modal-contact">
+                    <div class="call-modal-pic">
+                        <img id="call-contact-pic" src="" alt="">
+                    </div>
+                    <div class="call-modal-name" id="call-contact-name"></div>
+                    <div class="call-modal-status">Chamando...</div>
+                </div>
+                <div class="call-modal-actions">
+                    <button class="call-modal-btn decline-call" id="cancel-call-btn">❌</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Incoming call notification -->
+        <div id="incoming-call" class="incoming-call">
+            <div class="incoming-call-header">
+                <div class="incoming-call-pic">
+                    <img id="incoming-call-pic" src="" alt="">
+                </div>
+                <div class="incoming-call-info">
+                    <div class="incoming-call-name" id="incoming-call-name"></div>
+                    <div class="incoming-call-type" id="incoming-call-type"></div>
+                </div>
+            </div>
+            <div class="incoming-call-actions">
+                <button class="incoming-call-btn answer-btn" id="answer-call-btn">Atender</button>
+                <button class="incoming-call-btn decline-btn" id="decline-call-btn">Recusar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Connect to Socket.IO server
+        const socket = io();
+        const username = "{{ username }}";
+        let currentCallData = null;
+
+        // Handle contact click for chat
+        document.querySelectorAll('.contact-info').forEach(item => {
+            item.addEventListener('click', () => {
+                const contactUsername = item.dataset.username;
+                window.location.href = `/chat/${contactUsername}`;
+            });
+        });
+
+        // Handle audio call button click
+        document.querySelectorAll('.audio-call-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const contactUsername = btn.dataset.username;
+                const contactPic = btn.dataset.pic;
+                initiateCall(contactUsername, contactPic, 'audio');
+            });
+        });
+
+        // Handle video call button click
+        document.querySelectorAll('.video-call-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const contactUsername = btn.dataset.username;
+                const contactPic = btn.dataset.pic;
+                initiateCall(contactUsername, contactPic, 'video');
+            });
+        });
+
+        // Initiate call
+        function initiateCall(contactUsername, contactPic, callType) {
+            // Check if contact is online
+            const contactItem = document.querySelector(`.contact-info[data-username="${contactUsername}"]`);
+            const contactStatus = contactItem.querySelector('.contact-status').textContent;
+
+            if (contactStatus === 'offline') {
+                alert(`${contactUsername} está offline no momento.`);
+                return;
+            }
+
+            // Show call modal
+            const callModal = document.getElementById('call-modal');
+            const callContactPic = document.getElementById('call-contact-pic');
+            const callContactName = document.getElementById('call-contact-name');
+
+            callContactPic.src = `/static/profile_pics/${contactPic}`;
+            callContactName.textContent = contactUsername;
+            callModal.style.display = 'block';
+
+            // Store call data
+            currentCallData = {
+                target: contactUsername,
+                type: callType,
+                status: 'outgoing'
+            };
+
+            // Send call request to server
+            socket.emit('call_request', {
+                target: contactUsername,
+                type: callType
+            });
+        }
+
+        // Cancel outgoing call
+        document.getElementById('cancel-call-btn').addEventListener('click', () => {
+            if (currentCallData && currentCallData.status === 'outgoing') {
+                socket.emit('cancel_call', {
+                    target: currentCallData.target
+                });
+
+                document.getElementById('call-modal').style.display = 'none';
+                currentCallData = null;
+            }
+        });
+
+        // Answer incoming call
+        document.getElementById('answer-call-btn').addEventListener('click', () => {
+            if (currentCallData && currentCallData.status === 'incoming') {
+                socket.emit('answer_call', {
+                    caller: currentCallData.caller,
+                    accepted: true
+                });
+
+                document.getElementById('incoming-call').style.display = 'none';
+
+                // Redirect to call page
+                window.location.href = `/call/${currentCallData.caller}?type=${currentCallData.type}&initiator=false`;
+            }
+        });
+
+        // Decline incoming call
+        document.getElementById('decline-call-btn').addEventListener('click', () => {
+            if (currentCallData && currentCallData.status === 'incoming') {
+                socket.emit('answer_call', {
+                    caller: currentCallData.caller,
+                    accepted: false
+                });
+
+                document.getElementById('incoming-call').style.display = 'none';
+                currentCallData = null;
+            }
+        });
+
+        // Add contact functionality
+        document.getElementById('add-contact-btn').addEventListener('click', () => {
+            const contactInput = document.getElementById('contact-input');
+            const contactName = contactInput.value.trim();
+
+            if (!contactName) {
+                alert('Por favor, digite um nome de usuário.');
+                return;
+            }
+
+            fetch('/add_contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `contact=${encodeURIComponent(contactName)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    contactInput.value = '';
+
+                    // Add new contact to the list
+                    const contactsList = document.getElementById('contacts-list');
+                    const noContacts = contactsList.querySelector('.no-contacts');
+                    if (noContacts) {
+                        noContacts.remove();
+                    }
+
+                    const contact = data.contact;
+                    const contactItem = document.createElement('div');
+                    contactItem.className = 'contact-item';
+                    contactItem.innerHTML = `
+                        <div class="contact-pic">
+                            <img src="/static/profile_pics/${contact.profile_pic}" alt="${contact.username}">
+                            <span class="status-indicator ${contact.status}"></span>
+                        </div>
+                        <div class="contact-info" data-username="${contact.username}">
+                            <span class="contact-name">${contact.username}</span>
+                            <span class="contact-status">${contact.status}</span>
+                        </div>
+                        <div class="contact-actions">
+                            <button class="call-btn audio-call-btn" title="Chamada de áudio" data-username="${contact.username}" data-pic="${contact.profile_pic}">📞</button>
+                            <button class="call-btn video-call-btn" title="Chamada de vídeo" data-username="${contact.username}" data-pic="${contact.profile_pic}">📹</button>
+                        </div>
+                    `;
+
+                    contactsList.appendChild(contactItem);
+
+                    // Add event listeners to new buttons
+                    const newContactInfo = contactItem.querySelector('.contact-info');
+                    newContactInfo.addEventListener('click', () => {
+                        window.location.href = `/chat/${contact.username}`;
+                    });
+
+                    const newAudioCallBtn = contactItem.querySelector('.audio-call-btn');
+                    newAudioCallBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        initiateCall(contact.username, contact.profile_pic, 'audio');
+                    });
+
+                    const newVideoCallBtn = contactItem.querySelector('.video-call-btn');
+                    newVideoCallBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        initiateCall(contact.username, contact.profile_pic, 'video');
+                    });
+
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Erro ao adicionar contato.');
+            });
+        });
+
+        // Profile picture upload functionality
+        const modal = document.getElementById('upload-modal');
+        const profilePicContainer = document.getElementById('profile-pic-container');
+        const closeModal = document.querySelector('.close-modal');
+
+        profilePicContainer.addEventListener('click', () => {
+            modal.style.display = 'block';
+        });
+
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Preview image before upload
+        const profilePicInput = document.getElementById('profile-pic-input');
+        const previewImage = document.getElementById('preview-image');
+
+        profilePicInput.addEventListener('change', () => {
+            const file = profilePicInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    previewImage.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('upload-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            const file = profilePicInput.files[0];
+
+            if (!file) {
+                alert('Por favor, selecione uma imagem.');
+                return;
+            }
+
+            formData.append('profile_pic', file);
+
+            fetch('/upload_profile_pic', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update profile pic on page
+                    document.getElementById('profile-pic').src = `/static/profile_pics/${data.profile_pic}?t=${new Date().getTime()}`;
+                    modal.style.display = 'none';
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Foto de Perfil atualizada com SUCESSO! Agora é só reiniciar a página');
+            });
+        });
+
+        // Socket.IO event listeners
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('status_update', (data) => {
+            const contactItem = document.querySelector(`.contact-info[data-username="${data.user}"]`);
+            if (contactItem) {
+                const contactParent = contactItem.closest('.contact-item');
+                const statusIndicator = contactParent.querySelector('.status-indicator');
+                const statusText = contactItem.querySelector('.contact-status');
+
+                statusIndicator.className = `status-indicator ${data.status}`;
+                statusText.textContent = data.status;
+            }
+        });
+
+        socket.on('profile_pic_update', (data) => {
+            const contactItem = document.querySelector(`.contact-info[data-username="${data.user}"]`);
+            if (contactItem) {
+                const contactParent = contactItem.closest('.contact-item');
+                const profilePic = contactParent.querySelector('img');
+                profilePic.src = `/static/profile_pics/${data.profile_pic}?t=${new Date().getTime()}`;
+
+                // Update data attributes for call buttons
+                const audioCallBtn = contactParent.querySelector('.audio-call-btn');
+                const videoCallBtn = contactParent.querySelector('.video-call-btn');
+
+                if (audioCallBtn) audioCallBtn.dataset.pic = data.profile_pic;
+                if (videoCallBtn) videoCallBtn.dataset.pic = data.profile_pic;
+            }
+        });
+
+        // Call related socket events
+        socket.on('call_request', (data) => {
+            const incomingCall = document.getElementById('incoming-call');
+            const incomingCallPic = document.getElementById('incoming-call-pic');
+            const incomingCallName = document.getElementById('incoming-call-name');
+            const incomingCallType = document.getElementById('incoming-call-type');
+
+            // Set call data
+            currentCallData = {
+                caller: data.caller,
+                type: data.type,
+                status: 'incoming'
+            };
+
+            // Update UI
+            incomingCallPic.src = `/static/profile_pics/${data.profile_pic}`;
+            incomingCallName.textContent = data.caller;
+            incomingCallType.textContent = data.type === 'audio' ? 'Chamada de áudio' : 'Chamada de vídeo';
+
+            // Show notification
+            incomingCall.style.display = 'block';
+
+            // Play ringtone
+            const ringtone = new Audio('/static/sounds/ringtone.mp3');
+            ringtone.loop = true;
+            ringtone.play().catch(e => console.log('Error playing ringtone:', e));
+
+            // Store ringtone to stop it later
+            currentCallData.ringtone = ringtone;
+        });
+
+        socket.on('call_answered', (data) => {
+            // Hide call modal
+            document.getElementById('call-modal').style.display = 'none';
+
+            if (data.accepted) {
+                // Redirect to call page
+                window.location.href = `/call/${data.target}?type=${currentCallData.type}&initiator=true`;
+            } else {
+                alert(`${data.target} recusou a chamada.`);
+                currentCallData = null;
+            }
+        });
+
+        socket.on('call_cancelled', (data) => {
+            // Hide incoming call notification
+            document.getElementById('incoming-call').style.display = 'none';
+
+            // Stop ringtone if playing
+            if (currentCallData && currentCallData.ringtone) {
+                currentCallData.ringtone.pause();
+                currentCallData.ringtone.currentTime = 0;
+            }
+
+            currentCallData = null;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat com {{ contact }} - Messaging App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+            height: 100vh;
+        }
+
+        .app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #128C7E;
+            color: #fff;
+        }
+
+        .back-button a {
+            color: #fff;
+            font-size: 24px;
+            text-decoration: none;
+            margin-right: 10px;
+        }
+
+        .contact-profile {
+            display: flex;
+            align-items: center;
+        }
+
+        .contact-pic {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .contact-pic img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .status-indicator {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
+        .status-indicator.online {
+            background-color: #2ecc71;
+        }
+
+        .status-indicator.offline {
+            background-color: #95a5a6;
+        }
+
+        .status-indicator.typing {
+            background-color: #f39c12;
+        }
+
+        .contact-info h3 {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .status-text {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .chat-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: #e5ddd5;
+        }
+
+        .messages-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            max-width: 80%;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .message.incoming {
+            align-self: flex-start;
+            background-color: #fff;
+        }
+
+        .message.outgoing {
+            align-self: flex-end;
+            background-color: #dcf8c6;
+        }
+
+        .message-content {
+            word-wrap: break-word;
+        }
+
+        .audio-message audio {
+            width: 200px;
+            height: 40px;
+        }
+
+        .message-time {
+            font-size: 10px;
+            color: #7f8c8d;
+            text-align: right;
+            margin-top: 5px;
+        }
+
+        .no-messages {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+
+        .chat-footer {
+            padding: 10px;
+            background-color: #f0f2f5;
+            border-top: 1px solid #ddd;
+        }
+
+        .message-input-container {
+            display: flex;
+            align-items: center;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            resize: none;
+            height: 40px;
+            font-size: 16px;
+        }
+
+        .voice-btn, .send-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background-color: #128C7E;
+            color: #fff;
+            font-size: 18px;
+            margin-left: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .recording-content {
+            text-align: center;
+        }
+
+        .recording-indicator {
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .recording-wave {
+            width: 100px;
+            height: 100px;
+            background-color: rgba(255, 0, 0, 0.2);
+            border-radius: 50%;
+            margin: 0 auto;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.8;
+            }
+            50% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.8);
+                opacity: 0.8;
+            }
+        }
+
+        .recording-time {
+            margin-top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .recording-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: #fff;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+
+
+
+<div id="uploadStatus"></div>
+
+<script>
+    const dropArea = document.getElementById('drop-area');
+
+    // Previne o comportamento padrão (ex: abrir o arquivo)
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);    
+        document.body.addEventListener(eventName, preventDefaults, false); 
+    });
+
+    // Adiciona classes para feedback visual
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    // Manipula o evento de queda
+    dropArea.addEventListener('drop', handleDrop, false);
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function highlight() {
+        dropArea.classList.add('highlight');
+    }
+
+    function unhighlight() {
+        dropArea.classList.remove('highlight');
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        // Envia os arquivos
+        handleFiles(files);
+    }
+
+    function handleFiles(files) {
+        const file = files[0]; // Pega o primeiro arquivo
+        if (file) {
+            uploadFile(file);
+        }
+    }
+
+    function uploadFile(file) {
+        const recipient = prompt("Digite o nome do destinatário:"); // Solicita o destinatário
+        const formData = new FormData();
+        formData.append('media', file);
+        formData.append('recipient', recipient);
+
+        fetch('/send_media', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('uploadStatus').innerText = data.message;
+        })
+        .catch(error => {
+            document.getElementById('uploadStatus').innerText = 'Erro ao enviar arquivo.';
+            console.error('Error:', error);
+        });
+    }
+</script>
+
+
+<!-- Botão para limpar conversa, visível apenas no chat com o contato -->
+<button id="clear-chat-btn" class="clear-chat-btn">Limpar conversa</button>
+
+<style>
+    .clear-chat-btn {
+        background-color: #ff4d4d; /* Cor de fundo vermelha */
+        color: white; /* Cor do texto */
+        border: none; /* Remove a borda padrão */
+        border-radius: 5px; /* Bordas arredondadas */
+        padding: 10px 15px; /* Espaçamento interno */
+        cursor: pointer; /* Muda o cursor ao passar sobre o botão */
+        font-size: 16px; /* Tamanho da fonte */
+        transition: background-color 0.3s; /* Transição suave para a cor de fundo */
+    }
+
+    .clear-chat-btn:hover {
+        background-color: #ff1a1a; /* Cor de fundo ao passar o mouse */
+    }
+</style>
+
+<script>
+    document.getElementById('clear-chat-btn').addEventListener('click', function() {
+        if (confirm('Tem certeza que deseja limpar a conversa?')) {
+            fetch('/clear_chat/{{ contact }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    // Limpa as mensagens na interface do usuário
+                    document.getElementById('messages-container').innerHTML = ''; 
+                } else {
+                    alert('Erro ao limpar conversa: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao limpar conversa.');
+            });
+        }
+    });
+</script>
+
+    
+
+    <div class="app-container">
+        <header class="chat-header">
+            <div class="back-button">
+                <a href="{{ url_for('contacts') }}">&larr;</a>
+            </div>
+            <div class="contact-profile">
+                <div class="contact-pic">
+                    <img src="/static/profile_pics/{{ contact_pic }}" alt="{{ contact }}">
+                    <span class="status-indicator {{ contact_status }}" id="contact-status-indicator"></span>
+                </div>
+                <div class="contact-info">
+                    <h3>{{ contact }}</h3>
+                    <span class="status-text" id="contact-status-text">{{ contact_status }}</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="chat-content">
+            <div class="messages-container" id="messages-container">
+                {% if messages %}
+                    {% for msg in messages %}
+                        <div class="message {{ 'outgoing' if msg.sender == username else 'incoming' }}">
+                            {% if msg.type == 'text' %}
+                                <div class="message-content">{{ msg.content }}</div>
+                            {% elif msg.type == 'audio' %}
+                                <div class="message-content audio-message">
+                                    <audio controls src="/static/audio/{{ msg.content }}"></audio>
+                                </div>
+                            {% endif %}
+                            <div class="message-time">{{ msg.timestamp }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-messages">Nenhuma mensagem ainda. Comece a conversar!</div>
+                {% endif %}
+            </div>
+        </main>
+
+        <footer class="chat-footer">
+            <div class="message-input-container">
+                <textarea id="message-input" placeholder="Digite uma mensagem..." rows="1"></textarea>
+                <button id="voice-record-btn" class="voice-btn">🎤</button>
+                <button id="send-btn" class="send-btn">➤</button>
+                
+
+
+                <footer class="chat-footer">
+    <button id="emoji-btn">😊</button>
+    <div class="emoji-picker" id="emoji-picker" style="display: none;">
+        <span class="emoji-button" onclick="selectEmoji('😀')">😀</span>
+        <span class="emoji-button" onclick="selectEmoji('😃')">😃</span>
+        <span class="emoji-button" onclick="selectEmoji('😄')">😄</span>
+        <span class="emoji-button" onclick="selectEmoji('😁')">😁</span>
+        <span class="emoji-button" onclick="selectEmoji('😆')">😆</span>
+        <span class="emoji-button" onclick="selectEmoji('😅')">😅</span>
+        <span class="emoji-button" onclick="selectEmoji('😂')">😂</span>
+        <span class="emoji-button" onclick="selectEmoji('🤣')">🤣</span>
+        <span class="emoji-button" onclick="selectEmoji('😊')">😊</span>
+        <span class="emoji-button" onclick="selectEmoji('😇')">😇</span>
+        <span class="emoji-button" onclick="selectEmoji('🙂')">🙂</span>
+        <span class="emoji-button" onclick="selectEmoji('🙃')">🙃</span>
+        <span class="emoji-button" onclick="selectEmoji('😉')">😉</span>
+        <span class="emoji-button" onclick="selectEmoji('😍')">😍</span>
+        <span class="emoji-button" onclick="selectEmoji('😘')">😘</span>
+        <span class="emoji-button" onclick="selectEmoji('😜')">😜</span>
+        <span class="emoji-button" onclick="selectEmoji('😝')">😝</span>
+        <span class="emoji-button" onclick="selectEmoji('😋')">😋</span>
+        <span class="emoji-button" onclick="selectEmoji('😎')">😎</span>
+        <span class="emoji-button" onclick="selectEmoji('😏')">😏</span>
+        <span class="emoji-button" onclick="selectEmoji('😒')">😒</span>
+        <span class="emoji-button" onclick="selectEmoji('😞')">😞</span>
+        <span class="emoji-button" onclick="selectEmoji('😔')">😔</span>
+        <span class="emoji-button" onclick="selectEmoji('😟')">😟</span>
+        <span class="emoji-button" onclick="selectEmoji('😕')">😕</span>
+        <span class="emoji-button" onclick="selectEmoji('😠')">😠</span>
+        <span class="emoji-button" onclick="selectEmoji('😡')">😡</span>
+        <span class="emoji-button" onclick="selectEmoji('😶')">😶</span>
+        <span class="emoji-button" onclick="selectEmoji('😯')">😯</span>
+        <span class="emoji-button" onclick="selectEmoji('😦')">😦</span>
+        <span class="emoji-button" onclick="selectEmoji('😮')">😮</span>
+        <span class="emoji-button" onclick="selectEmoji('😱')">😱</span>
+        <span class="emoji-button" onclick="selectEmoji('😰')">😰</span>
+        <span class="emoji-button" onclick="selectEmoji('😢')">😢</span>
+        <span class="emoji-button" onclick="selectEmoji('😥')">😥</span>
+        <span class="emoji-button" onclick="selectEmoji('😓')">😓</span>
+        <span class="emoji-button" onclick="selectEmoji('😩')">😩</span>
+        <span class="emoji-button" onclick="selectEmoji('😴')">😴</span>
+        <span class="emoji-button" onclick="selectEmoji('👍')">👍</span>
+        <span class="emoji-button" onclick="selectEmoji('❤')">❤</span>
+        <span class="emoji-button" onclick="selectEmoji('😍')">😍</span>
+        <span class="emoji-button" onclick="selectEmoji('🥰')">🥰</span>
+        <span class="emoji-button" onclick="selectEmoji('😻')">😻</span>
+    </div>
+</footer>
+
+<script>
+    
+    const emojiBtn = document.getElementById('emoji-btn');
+    const emojiPicker = document.getElementById('emoji-picker');
+
+    // Alterna a visibilidade do seletor de emojis
+    emojiBtn.onclick = function() {
+        emojiPicker.style.display = emojiPicker.style.display === 'block' ? 'none' : 'block';
+    };
+
+    // Adiciona o emoji ao campo de entrada
+    function selectEmoji(emoji) {
+        const messageInput = document.querySelector('textarea'); // Seleciona o textarea existente
+        if (messageInput) {
+            messageInput.value += emoji; // Adiciona o emoji ao campo de entrada
+        }
+        emojiPicker.style.display = 'none'; // Fecha o seletor de emojis
+    }
+</script>
+
+
+
+            
+            
+        
+            </div>
+        </footer>
+
+        <div id="recording-modal" class="modal">
+            <div class="modal-content recording-content">
+                <h3>Gravando mensagem de voz</h3>
+                <div class="recording-indicator">
+                    <div class="recording-wave"></div>
+                    <div class="recording-time" id="recording-time">00:00</div>
+                </div>
+                <div class="recording-actions">
+                    <button id="stop-recording-btn" class="btn btn-danger">Parar</button>
+                    <button id="cancel-recording-btn" class="btn">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+    navigator.serviceWorker.register('/service-worker.js')
+    .then(function(registration) {
+        console.log('Service Worker registered');
+
+        // Solicitar permissão para notificações
+        return Notification.requestPermission().then(function(permission) {
+            if (permission === 'granted') {
+                // Inscrever para notificações
+                return registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array('YOUR_PUBLIC_VAPID_KEY')
+                }).then(function(subscription) {
+                    // Enviar a assinatura para o servidor
+                    fetch('/subscribe', {
+                        method: 'POST',
+                        body: JSON.stringify({ subscription, username: 'USERNAME' }),  // Substitua por uma variável que representa o usuário
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                });
+            }
+        });
+    });
+}
+
+        // Connect to Socket.IO server
+        const socket = io();
+        const username = "{{ username }}";
+        const contact = "{{ contact }}";
+        let isTyping = false;
+        let typingTimeout = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingTimer = null;
+        let recordingSeconds = 0;
+
+        // DOM elements
+        const messagesContainer = document.getElementById('messages-container');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-btn');
+        const voiceRecordBtn = document.getElementById('voice-record-btn');
+        const recordingModal = document.getElementById('recording-modal');
+        const stopRecordingBtn = document.getElementById('stop-recording-btn');
+        const cancelRecordingBtn = document.getElementById('cancel-recording-btn');
+        const recordingTime = document.getElementById('recording-time');
+        const contactStatusIndicator = document.getElementById('contact-status-indicator');
+        const contactStatusText = document.getElementById('contact-status-text');
+
+        // Scroll to bottom of messages
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Initialize
+        scrollToBottom();
+
+        // Send text message
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            socket.emit('send_message', {
+                receiver: contact,
+                message: message,
+                type: 'text'
+            });
+
+            messageInput.value = '';
+            messageInput.focus();
+        }
+
+        // Format time for recording
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const secs = (seconds % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        }
+
+        // Update recording time
+        function updateRecordingTime() {
+            recordingSeconds++;
+            recordingTime.textContent = formatTime(recordingSeconds);
+        }
+
+        // Start voice recording
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.addEventListener('dataavailable', event => {
+                    audioChunks.push(event.data);
+                });
+
+                mediaRecorder.addEventListener('stop', () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    sendAudioMessage(audioBlob);
+                });
+
+                mediaRecorder.start();
+                recordingModal.style.display = 'block';
+
+                // Start recording timer
+                recordingSeconds = 0;
+                recordingTime.textContent = formatTime(recordingSeconds);
+                recordingTimer = setInterval(updateRecordingTime, 1000);
+
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                alert('Erro ao acessar o microfone. Verifique as permissões.');
+            }
+        }
+
+        // Stop recording
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                clearInterval(recordingTimer);
+                recordingModal.style.display = 'none';
+
+                // Stop all tracks in the stream
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        // Cancel recording
+        function cancelRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                clearInterval(recordingTimer);
+                recordingModal.style.display = 'none';
+
+                // Stop all tracks in the stream
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+
+                // Clear audio chunks so the message isn't sent
+                audioChunks = [];
+            }
+        }
+
+        // Send audio message
+        function sendAudioMessage(audioBlob) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64Audio = reader.result;
+
+                // Send to server
+                fetch('/save_audio', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `contact=${encodeURIComponent(contact)}&audio=${encodeURIComponent(base64Audio)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Audio will be displayed via socket.io event
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro ao enviar mensagem de áudio.');
+                });
+            };
+            reader.readAsDataURL(audioBlob);
+        }
+
+        // Add a new message to the chat
+        function addMessageToChat(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.sender === username ? 'outgoing' : 'incoming'}`;
+
+            let contentHtml = '';
+            if (message.type === 'text') {
+                contentHtml = `<div class="message-content">${message.content}</div>`;
+            } else if (message.type === 'audio') {
+                contentHtml = `
+                    <div class="message-content audio-message">
+                        <audio controls src="/static/audio/${message.content}"></audio>
+                    </div>
+                `;
+            }
+
+            messageDiv.innerHTML = `
+                ${contentHtml}
+                <div class="message-time">${message.timestamp}</div>
+            `;
+
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        messageInput.addEventListener('input', () => {
+            if (!isTyping) {
+                isTyping = true;
+                socket.emit('typing', { receiver: contact, typing: true });
+            }
+
+            // Clear existing timeout
+            if (typingTimeout) {
+                clearTimeout(typingTimeout);
+            }
+
+            // Set new timeout
+            typingTimeout = setTimeout(() => {
+                isTyping = false;
+                socket.emit('typing', { receiver: contact, typing: false });
+            }, 2000);
+        });
+
+        voiceRecordBtn.addEventListener('click', startRecording);
+        stopRecordingBtn.addEventListener('click', stopRecording);
+        cancelRecordingBtn.addEventListener('click', cancelRecording);
+
+        // Socket.IO event listeners
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('new_message', (data) => {
+            if (data.sender === contact) {
+                addMessageToChat(data);
+            }
+        });
+
+        socket.on('message_sent', (data) => {
+            if (data.receiver === contact) {
+                addMessageToChat({
+                    sender: username,
+                    type: data.type,
+                    content: data.content,
+                    timestamp: data.timestamp
+                });
+            }
+        });
+
+        socket.on('status_update', (data) => {
+            if (data.user === contact) {
+                contactStatusIndicator.className = `status-indicator ${data.status}`;
+                contactStatusText.textContent = data.status;
+            }
+        });
+    </script>
+</body>
+</html>
