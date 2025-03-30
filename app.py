@@ -34,7 +34,7 @@ from flask_talisman import Talisman
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key'
+app.config['SECRET_KEY'] = 'chavinha'
 app.config['UPLOAD_FOLDER'] = 'static/profile_pics'
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB max upload
 socketio = SocketIO(app)
