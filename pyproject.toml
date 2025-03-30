@@ -1,0 +1,43 @@
+[project]
+name = "liwusapp"
+version = "0.1.0"
+description = "Um chat online completo, semelhante ao whatsapp"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "emoji>=2.14.1",
+    "flask>=3.1.0",
+    "flask-dance>=7.1.0",
+    "flask-socketio>=5.5.1",
+    "flask-talisman>=1.1.0",
+    "plyer>=2.1.0",
+    "pywebpush>=2.0.3",
+    "redis>=5.2.1",
+    "twilio>=9.5.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "ruff>=0.11.2",
+    "taskipy>=1.14.1",
+]
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+preview = true
+select = ['I', 'F', 'E', 'W', 'PL', 'PT']
+
+[tool.ruff.format]
+preview = true
+quote-style = 'single'
+
+[tool.taskipy.tasks]
+lint = 'ruff check'
+pre_format = 'ruff check --fix'
+format = 'ruff format'
+run = ''
+pre_test = 'task lint'
+test = 'pytest -s -x --cov=fast_zero -vv'
