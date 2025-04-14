@@ -19,7 +19,6 @@ import time
 import hashlib
 import sys
 import json
-from plyer import notification
 from pywebpush import webpush, WebPushException
 import flask_dance
 import emoji
@@ -841,11 +840,13 @@ CHAT_TEMPLATE = """
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: Arial, sans-serif;
+             font-family: "Bungee Spice", sans-serif;
+  font-weight: 400;
+  font-style: normal;
         }
 
         body {
-            background-color: #f0f2f5;
+            background-color: #2b2d31;
             color: #333;
             line-height: 1.6;
             height: 100vh;
@@ -1638,7 +1639,7 @@ CONTACTS_TEMPLATE = """
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
@@ -2135,6 +2136,7 @@ CONTACTS_TEMPLATE = """
                     `;
                     document.head.appendChild(style);
                 </script>
+
                 
               <!-- Botão para criar grupo -->
 <button class="create-group-btn" onclick="redirectToGroupTemplate()">
@@ -3455,6 +3457,8 @@ app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB max upload
 socketio = SocketIO(app)
 app.jinja_env.globals.update(__builtins__=None)  # Desativa SSTI!
 subscriptions = {}
+socketio = SocketIO(app, async_mode='eventlet')
+
 
 
 sys.path.insert(0, '/home/SEU_USUARIO/mysite')
@@ -4004,6 +4008,56 @@ def add_contact():
     return jsonify({'success': False, 'message': 'Erro ao adicionar contato.'})
 
 
+@app.route('/update-nickname', methods=['POST'])
+def update_nickname():
+    data = request.get_json()
+    contact = data.get('contact')
+    new_nickname = data.get('nickname')
+
+    if not contact or not new_nickname:
+        return jsonify({'error': 'Contato e apelido são obrigatórios.'}), 400
+
+    try:
+        # Lê o arquivo logins.txt
+        with open('logins.txt', 'r') as file:
+            lines = file.readlines()
+
+        print("Linhas antes da atualização:", lines)  # Log para depuração
+
+        # Modifica o conteúdo
+        updated_lines = []
+        contact_found = False
+
+        for line in lines:
+            parts = line.strip().split(':')
+            print(f"Comparando: {parts[2]} com {contact}")
+
+            # Verifica se o contato está na linha
+            if contact in parts[2].split(','):
+                contact_found = True
+                # Adiciona o novo apelido à lista de apelidos
+                current_nicknames = parts[2].split(',')
+                if new_nickname not in current_nicknames:
+                    current_nicknames.append(new_nickname)
+                parts[2] = ','.join(current_nicknames)  # Atualiza a lista de apelidos
+                print(f"Adicionando {new_nickname} a {contact}")  # Log para depuração
+            
+            updated_lines.append(':'.join(parts))
+
+        # Verifica se houve alguma atualização
+        if contact_found:
+            # Escreve o novo conteúdo no arquivo
+            with open('logins.txt', 'w') as file:
+                file.write('\n'.join(updated_lines) + '\n')
+            print("Linhas após a atualização:", updated_lines)  # Log para depuração
+            return jsonify({'message': 'Apelido adicionado com sucesso!'}), 200
+        else:
+            return jsonify({'message': 'Contato não encontrado.'}), 404
+
+    except Exception as e:
+        print("Erro:", str(e))  # Log para depuração
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/chat/<contact>')
 def chat(contact):
     if 'username' not in session:
@@ -4028,13 +4082,7 @@ def chat(contact):
                     f'{message["timestamp"]}, visto por: {contact if message["read"] else "não visto"}'
                 )
 
-            # Notificação para Windows
-            if contact_status == 'offline':
-                notification.notify(
-                    title='Contato Offline',
-                    message=f'{contact} está offline. Sua mensagem será entregue quando ele estiver online.',
-                    app_name='Messaging App',
-                )
+          
 
             return render_template_string(
                 CHAT_TEMPLATE
@@ -5188,6 +5236,13 @@ def handle_typing(data):
 
 
 if __name__ == '__main__':
+    import eventlet
+    import eventlet.wsgi
+
     # Create default profile pic if it doesn't exist
     default_pic_path = os.path.join(app.config['UPLOAD_FOLDER'], 'default.png')
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    if not os.path.exists(default_pic_path):
+        with open(default_pic_path, 'wb') as f:
+            f.write(b'')  # ou gere uma imagem padrão válida
+
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
